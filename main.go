@@ -1,9 +1,10 @@
 package main
 
 import (
-	"encoding/json"
 	"fmt"
+	"html/template"
 	"log"
+	"log/slog"
 	"net/http"
 	"os"
 	"time"
@@ -13,36 +14,42 @@ import (
 	"github.com/st107853/muslib/lib"
 )
 
+type Data struct {
+	Title  string
+	Musics []lib.Music
+}
+
+var tmpl, _ = template.ParseFiles("template.html")
+var index, _ = template.ParseFiles("index.html")
+
 func main() {
+
+	slog.SetDefault(slog.New(slog.NewTextHandler(os.Stdout, nil)))
+
 	// Load the .env file
 	err := godotenv.Load()
 	if err != nil {
-		log.Fatal("Error loading .env file")
+		slog.Error("Error loading .env file")
 	}
 
 	port := os.Getenv("PORT")
 
-	var config = lib.PostgresDBParams{
-		Host:     os.Getenv("HOST"),
-		DBName:   os.Getenv("DBNAME"),
-		User:     os.Getenv("DBUSER"),
-		Password: os.Getenv("DBPASS"),
+	err = lib.Connect()
+	if err != nil {
+		log.Fatal(err)
 	}
-
-	lib.Connect(config)
 
 	r := mux.NewRouter()
 
 	r.HandleFunc("/muslib", musicGetAll).Methods("GET")
-	r.HandleFunc("/muslib/{parametr}/{name}", musicGetBy).Methods("GET")
+	r.HandleFunc("/muslib/{parametr}/{data}", musicGetBy).Methods("GET")
+	r.HandleFunc("/muslib/song/{group}/{song}", musicGetSong).Methods("GET")
 
-	r.HandleFunc("/muslib/{group}/{song}/{parametr}/{data}", musicPut).Methods("Put")
+	r.HandleFunc("/muslib/{group}/{song}/{parametr}/{data}", musicPut).Methods("PUT")
 
 	r.HandleFunc("/muslib/{group}/{song}", musicPost).Methods("POST")
 
 	r.HandleFunc("/muslib/{group}/{song}", musicDelete).Methods("DELETE")
-
-	//r.HandleFunc("muslib/chang")
 
 	//create http server
 	server := http.Server{
@@ -53,7 +60,7 @@ func main() {
 		Handler:      r,
 	}
 
-	log.Printf("Server starts at: %v\n", port)
+	slog.Any("Server starts at: %v\n", port)
 	if err := server.ListenAndServe(); err != nil {
 		log.Fatal(err)
 	}
@@ -61,32 +68,97 @@ func main() {
 
 func musicGetAll(w http.ResponseWriter, r *http.Request) {
 	mus, err := lib.Get()
-
 	if err != nil {
-		fmt.Println(err)
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		slog.Warn(
+			"can't show all songs",
+			slog.String("method", "GET"),
+			slog.String("path", "/muslib"),
+			slog.Any("error", err),
+		)
+		return
 	}
 
-	fmt.Println(mus)
+	data := Data{
+		Title:  "All what we have",
+		Musics: mus,
+	}
 
-	resJson, _ := json.Marshal(mus)
-
-	w.Write(resJson)
+	err = tmpl.Execute(w, data)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		slog.Warn(
+			"template.html problem",
+			slog.String("method", "GET"),
+			slog.String("path", "/muslib"),
+			slog.Any("error", err),
+		)
+		return
+	}
 }
 
 func musicGetBy(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
-
-	mus, err := lib.GetBy(vars["parametr"], vars["name"])
-
+	mus, err := lib.GetBy(vars["parametr"], vars["data"])
 	if err != nil {
-		fmt.Println(err)
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		slog.Warn(
+			"lib.GetBy problem",
+			slog.String("method", "GET"),
+			slog.String("path", "/muslib/"+vars["parametr"]+"/"+vars["data"]),
+			slog.Any("error", err),
+		)
+		return
 	}
 
-	fmt.Println(mus)
+	data := Data{
+		Title:  "Songs of band",
+		Musics: mus,
+	}
 
-	resJson, _ := json.Marshal(mus)
+	err = tmpl.Execute(w, data)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		slog.Warn(
+			"template.html problem",
+			slog.String("method", "GET"),
+			slog.String("path", "/muslib/{parametr}/{data}"),
+			slog.Any("error", err),
+		)
+		return
+	}
+	w.WriteHeader(http.StatusOK)
+}
 
-	w.Write(resJson)
+func musicGetSong(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	group, song := vars["group"], vars["song"]
+
+	mus, err := lib.GetSong(group, song)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		slog.Warn(
+			"lib.GetSong problem",
+			slog.String("method", "GET"),
+			slog.String("path", "/muslib/song/"+vars["group"]+"/"+vars["song"]),
+			slog.Any("error", err),
+		)
+		return
+	}
+
+	title := fmt.Sprintf("%v %v text", group, song)
+
+	err = index.Execute(w, Data{Title: title, Musics: []lib.Music{mus}})
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		slog.Warn(
+			"ingex.html problem",
+			slog.String("method", "GET"),
+			slog.String("path", "/muslib/song/{group}/{song}"),
+			slog.Any("error", err),
+		)
+		return
+	}
 }
 
 func musicPut(w http.ResponseWriter, r *http.Request) {
@@ -95,24 +167,37 @@ func musicPut(w http.ResponseWriter, r *http.Request) {
 	err := lib.Put(vars["group"], vars["song"], vars["parametr"], vars["data"])
 
 	if err != nil {
-		fmt.Println(err)
-		w.WriteHeader(400)
+		w.WriteHeader(http.StatusMethodNotAllowed)
+		slog.Warn(
+			"lib.Put problem",
+			slog.String("method", "PUT"),
+			slog.String("path", "/muslib/"+vars["group"]+"/"+vars["song"]+
+				"/"+vars["parametr"]+"/"+vars["data"]),
+			slog.Any("error", err),
+		)
 		return
 	}
 
-	w.WriteHeader(200)
+	w.Write([]byte("<h1>Successesfullu updated!</h1>"))
 }
 
 func musicPost(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
+	t := time.Now()
 
-	err := lib.Post(vars["group"], vars["song"])
+	err := lib.Post(vars["group"], vars["song"], t.Format("2006.01.02"))
 
 	if err != nil {
-		w.WriteHeader(503)
+		w.WriteHeader(http.StatusMethodNotAllowed)
+		slog.Warn(
+			"lib.Put problem",
+			slog.String("method", "POST"),
+			slog.String("path", "/muslib/"+vars["group"]+"/"+vars["song"]),
+			slog.Any("error", err),
+		)
 		log.Print(err)
 	}
-	w.WriteHeader(200)
+	w.Write([]byte("<h1>Successesfullu created!</h1>"))
 }
 
 func musicDelete(w http.ResponseWriter, r *http.Request) {
@@ -121,8 +206,13 @@ func musicDelete(w http.ResponseWriter, r *http.Request) {
 	err := lib.Delate(vars["group"], vars["song"])
 
 	if err != nil {
-		fmt.Println(err)
+		slog.Warn(
+			"lib.Put problem",
+			slog.String("method", "DELETE"),
+			slog.String("path", "/muslib/"+vars["group"]+"/"+vars["song"]),
+			slog.Any("error", err),
+		)
 	}
 
-	w.WriteHeader(200)
+	w.WriteHeader(http.StatusOK)
 }

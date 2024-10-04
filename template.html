@@ -1,0 +1,45 @@
+<html></html>
+<head>
+	<title>Songs you like</title>
+</head>
+<body>
+	<table>
+		<thead>
+			<tr>
+				<th>{{.Title}}</th>
+				<th>Lets add some songs</th>
+			</tr>
+		</thead>
+		<tbody>
+			<td>
+				<ul>
+					{{range .Musics}}
+						<li><p>
+								<a href="/muslib/song/{{.Group}}/{{.Song}}">
+									<div>{{.Group}} {{.Song}}</div>
+								  </a>
+						</p></li>
+					{{end}}
+				</ul>
+			</td>
+			<td valign="top">
+				<form id="songForm" action="/muslib/" method="post" onsubmit="updateAction()">
+					<label>Band: <input type="text" id="group" required></label>
+					<br>
+					<label>Song: <input type="text" id="song" required></label>
+					<br>
+					<input type="submit" value="Add song">
+				</form>
+			</td>
+		</tbody>
+	</table>
+	
+	<script>
+	function updateAction() {
+		var group = document.getElementById('group').value;
+		var song = document.getElementById('song').value;
+		document.getElementById('songForm').action += group + '/' + song;
+	}
+	</script>
+</body>
+</html>

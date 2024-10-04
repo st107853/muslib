@@ -1,8 +1,10 @@
 package lib
 
 import (
+	"encoding/base64"
 	"errors"
 	"fmt"
+	"os"
 
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
@@ -21,13 +23,6 @@ type Music struct {
 	Link        string `json:"youtube link"`
 }
 
-type PostgresDBParams struct {
-	DBName   string
-	Host     string
-	User     string
-	Password string
-}
-
 type Logger struct {
 	//	events chan<- Event // Write-only channel for sending events
 	//	errors <-chan error // Read-only channels for receving errors
@@ -36,11 +31,11 @@ type Logger struct {
 
 var db Logger
 
-func Connect(config PostgresDBParams) error {
+func Connect() error {
 
 	//Capture connection propeties.
 	connStr := fmt.Sprintf("host=%s dbname=%s user=%s password=%s",
-		config.Host, config.DBName, config.User, config.Password)
+		os.Getenv("HOST"), os.Getenv("DBNAME"), os.Getenv("DBUSER"), os.Getenv("DBPASS"))
 
 	//Get a database handle.
 	l, err := gorm.Open(postgres.Open(connStr), &gorm.Config{})
@@ -69,6 +64,14 @@ func Get() ([]Music, error) {
 	return songs, nil
 }
 
+func GetSong(group, song string) (Music, error) {
+	var music Music
+
+	err := db.Where(`"group" = ? AND "song" = ?`, group, song).First(&music).Error
+
+	return music, err
+}
+
 func GetBy(par, data string) ([]Music, error) {
 	var songs []Music
 
@@ -82,11 +85,9 @@ func GetBy(par, data string) ([]Music, error) {
 }
 
 func Put(group, song, parametr, data string) error {
-	var temp Music
+	temp, err := GetSong(group, song)
 
-	db.Where(`"group" = ? AND "song" = ?`, group, song).First(&temp)
-
-	if temp.Group == "" {
+	if temp.Group == "" || err != nil {
 		return ErrorNoSuchSong
 	}
 
@@ -95,8 +96,19 @@ func Put(group, song, parametr, data string) error {
 		temp.Group = data
 	case "song":
 		temp.Song = data
-	case "releasedate":
-		temp.ReleaseDate = data
+	case "date":
+		{
+			url, err := base64.RawURLEncoding.DecodeString(data)
+
+			if err != nil {
+				fmt.Println(err)
+			}
+			temp.ReleaseDate = string(url)
+		}
+	case "link":
+		temp.Link = data
+	case "text":
+		temp.Text = formatText(data)
 	}
 
 	db.Where(`"group" = ? AND "song" = ?`, group, song).Save(&temp)
@@ -104,10 +116,10 @@ func Put(group, song, parametr, data string) error {
 	return nil
 }
 
-func Post(group, song string) error {
+func Post(group, song, time string) error {
 	var temp Music
 
-	err := db.Where(Music{Group: group, Song: song}).FirstOrCreate(&temp).Error
+	err := db.Where(Music{Group: group, Song: song, ReleaseDate: time}).FirstOrCreate(&temp).Error
 
 	return err
 }
@@ -121,4 +133,17 @@ func Delate(group, song string) error {
 	}
 
 	return nil
+}
+
+func formatText(text string) string {
+	result := ""
+
+	for _, v := range text {
+		if v >= 'A' && v <= 'Z' {
+			result += "\n"
+		}
+		result += string(v)
+	}
+
+	return result
 }
