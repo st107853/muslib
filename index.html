@@ -1,66 +1,70 @@
-<html></html>
+<!DOCTYPE html>
 <head>
-	<title>Songs you like</title>
+   <title>Songs you like</title>
 </head>
 <body>
-	<table>
-		<thead>
-			<tr>
-				<th>{{.Title}}</th>
-				<th>What we know about this song</th>
-			</tr>
-		</thead>
-		<tbody>
-            {{range .Musics}}
-                <td>
-                    <ul>
-                        <li><p>
-                            <pre>{{.Text}}</pre>
-                        </p></li>
-                    </ul>
-                </td>
-                <td valign="top">
-                    <a href={{.Link}}>Link</a><br>
-                    <div>Date of realeas: {{.ReleaseDate}}</div><br>
-                    <form id="songForm" action="/muslib/{{.Group}}/{{.Song}}/link/" method="PUT" onsubmit="encodeToBase16()">
-                        <label>Link: <input type="text" id="link" required></label>
-                        <br>
-                        <input type="submit" value="Change link">
-                    </form>
-                    <form id="songText" action="/muslib/{{.Group}}/{{.Song}}/text/" method="PUT" onsubmit="formating()">
-                        <label>Text: <input type="text" id="text" required></label>
-                        <br>
-                        <input type="submit" value="Change text">
-                    </form>
-                    <form id="realeasDate" action="/muslib/{{.Group}}/{{.Song}}/date/" method="PUT" onsubmit="date()">
-                        <label>Date: <input type="text" id="date" required></label>
-                        <br>
-                        <input type="submit" value="Change date">
-                    </form>
-                </td>
-            {{end}}
-		</tbody>
-	</table>
-	
-	<script>
-        function encodeToBase16() {
-            var link = document.getElementById('link').value;
-            var encodeLink = btoa(link).replaceAll("/", "_").replaceAll("+", "-");
-
-            document.getElementById('songForm').action += encodeLink;
-        }
-
-        function formating() {
-            var text = document.getElementById('text').value;
-
-            document.getElementById('songText').action += text;
-        }
-
-        function date() {
-            var date = document.getElementById('date').value;
-
-            document.getElementById('realeasDate').action += date;
-        }
-	</script>
+   <table>
+      <thead>
+         <tr>
+            <th>{{.Title}}</th>
+            <th>What we know about this song</th>
+         </tr>
+      </thead>
+      <tbody>
+         <tr>
+            <td>
+               {{range .Musics}}
+               <ul>
+                  <li>
+                     <pre>{{.Text}}</pre>
+                  </li>
+               </ul>
+               {{end}}
+            </td>
+            <td valign="top">
+               {{range .Musics}}
+               <a href={{.Link}}>Link</a><br>
+               <div>Date of realeas: {{.ReleaseDate}}</div>
+               <br>
+               <form id="songForm" action="/muslib/{{.Group}}/{{.Song}}/link/" method="post" onsubmit="encodeToBase16()">
+                  <label>Link: <input type="text" id="link" required></label>
+                  <br>
+                  <input type="submit" value="Change link">
+               </form>
+               <form id="songText" action="/muslib/{{.Group}}/{{.Song}}/text/" method="post" onsubmit="formating()">
+                  <label>Text: <input type="text" id="text" required></label>
+                  <br>
+                  <input type="submit" value="Change text">
+               </form>
+               <form id="songText" action="/muslib/{{.Group}}/{{.Song}}/date/" method="post" onsubmit="formating()">
+                  <label>Date: <input type="text" id="text" required></label>
+                  <br>
+                  <input type="submit" value="Change date">
+               </form>
+               {{end}}
+            </td>
+         </tr>
+      </tbody>
+   </table>
+   <script>
+      function encodeToBase16() {
+          var link = document.getElementById('link').value;
+          var encodeLink = btoa(link).replaceAll("/", "_").replaceAll("+", "-");
+      
+          document.getElementById('songForm').action += encodeLink;
+      }
+      
+      function formating() {
+          var text = document.getElementById('text').value;
+      
+          document.getElementById('songText').action += text;
+      }
+      
+      function date() {
+          var date = document.getElementById('date').value;
+      
+          document.getElementById('realeasDate').action += date;
+      }
+   </script>
 </body>
 </html>

@@ -45,7 +45,7 @@ func main() {
 	r.HandleFunc("/muslib/{parametr}/{data}", musicGetBy).Methods("GET")
 	r.HandleFunc("/muslib/song/{group}/{song}", musicGetSong).Methods("GET")
 
-	r.HandleFunc("/muslib/{group}/{song}/{parametr}/{data}", musicPut).Methods("PUT")
+	r.HandleFunc("/muslib/{group}/{song}/{parametr}/{data}", musicPut).Methods("POST")
 
 	r.HandleFunc("/muslib/{group}/{song}", musicPost).Methods("POST")
 
@@ -87,7 +87,7 @@ func musicGetAll(w http.ResponseWriter, r *http.Request) {
 	err = tmpl.Execute(w, data)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
-		slog.Warn(
+		slog.Error(
 			"template.html problem",
 			slog.String("method", "GET"),
 			slog.String("path", "/muslib"),
@@ -95,6 +95,11 @@ func musicGetAll(w http.ResponseWriter, r *http.Request) {
 		)
 		return
 	}
+
+	slog.Debug(
+		"Get all",
+		slog.String("path", "/muslib"),
+	)
 }
 
 func musicGetBy(w http.ResponseWriter, r *http.Request) {
@@ -102,7 +107,7 @@ func musicGetBy(w http.ResponseWriter, r *http.Request) {
 	mus, err := lib.GetBy(vars["parametr"], vars["data"])
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
-		slog.Warn(
+		slog.Error(
 			"lib.GetBy problem",
 			slog.String("method", "GET"),
 			slog.String("path", "/muslib/"+vars["parametr"]+"/"+vars["data"]),
@@ -119,15 +124,21 @@ func musicGetBy(w http.ResponseWriter, r *http.Request) {
 	err = tmpl.Execute(w, data)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
-		slog.Warn(
+		slog.Error(
 			"template.html problem",
 			slog.String("method", "GET"),
-			slog.String("path", "/muslib/{parametr}/{data}"),
+			slog.String("path", "/muslib/"+vars["parametr"]+"/"+vars["data"]),
 			slog.Any("error", err),
 		)
 		return
 	}
+
 	w.WriteHeader(http.StatusOK)
+	slog.Debug(
+		"Get by",
+		slog.String("method", "GET"),
+		slog.String("path", "/muslib/"+vars["parametr"]+"/"+vars["data"]),
+	)
 }
 
 func musicGetSong(w http.ResponseWriter, r *http.Request) {
@@ -137,7 +148,7 @@ func musicGetSong(w http.ResponseWriter, r *http.Request) {
 	mus, err := lib.GetSong(group, song)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
-		slog.Warn(
+		slog.Error(
 			"lib.GetSong problem",
 			slog.String("method", "GET"),
 			slog.String("path", "/muslib/song/"+vars["group"]+"/"+vars["song"]),
@@ -151,14 +162,20 @@ func musicGetSong(w http.ResponseWriter, r *http.Request) {
 	err = index.Execute(w, Data{Title: title, Musics: []lib.Music{mus}})
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
-		slog.Warn(
+		slog.Error(
 			"ingex.html problem",
 			slog.String("method", "GET"),
-			slog.String("path", "/muslib/song/{group}/{song}"),
+			slog.String("path", "/muslib/song/"+vars["group"]+"/"+vars["song"]),
 			slog.Any("error", err),
 		)
 		return
 	}
+
+	slog.Debug(
+		"Get song",
+		slog.String("method", "GET"),
+		slog.String("path", "/muslib/song/"+vars["group"]+"/"+vars["song"]),
+	)
 }
 
 func musicPut(w http.ResponseWriter, r *http.Request) {
@@ -168,7 +185,7 @@ func musicPut(w http.ResponseWriter, r *http.Request) {
 
 	if err != nil {
 		w.WriteHeader(http.StatusMethodNotAllowed)
-		slog.Warn(
+		slog.Error(
 			"lib.Put problem",
 			slog.String("method", "PUT"),
 			slog.String("path", "/muslib/"+vars["group"]+"/"+vars["song"]+
@@ -179,6 +196,13 @@ func musicPut(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.Write([]byte("<h1>Successesfullu updated!</h1>"))
+
+	slog.Debug(
+		"Put (change) song",
+		slog.String("method", "PUT"),
+		slog.String("path", "/muslib/"+vars["group"]+"/"+vars["song"]+
+			"/"+vars["parametr"]+"/"+vars["data"]),
+	)
 }
 
 func musicPost(w http.ResponseWriter, r *http.Request) {
@@ -189,7 +213,7 @@ func musicPost(w http.ResponseWriter, r *http.Request) {
 
 	if err != nil {
 		w.WriteHeader(http.StatusMethodNotAllowed)
-		slog.Warn(
+		slog.Error(
 			"lib.Put problem",
 			slog.String("method", "POST"),
 			slog.String("path", "/muslib/"+vars["group"]+"/"+vars["song"]),
@@ -198,6 +222,12 @@ func musicPost(w http.ResponseWriter, r *http.Request) {
 		log.Print(err)
 	}
 	w.Write([]byte("<h1>Successesfullu created!</h1>"))
+
+	slog.Debug(
+		"Post new song",
+		slog.String("method", "POST"),
+		slog.String("path", "/muslib/"+vars["group"]+"/"+vars["song"]),
+	)
 }
 
 func musicDelete(w http.ResponseWriter, r *http.Request) {
@@ -206,7 +236,7 @@ func musicDelete(w http.ResponseWriter, r *http.Request) {
 	err := lib.Delate(vars["group"], vars["song"])
 
 	if err != nil {
-		slog.Warn(
+		slog.Error(
 			"lib.Put problem",
 			slog.String("method", "DELETE"),
 			slog.String("path", "/muslib/"+vars["group"]+"/"+vars["song"]),
@@ -215,4 +245,10 @@ func musicDelete(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.WriteHeader(http.StatusOK)
+
+	slog.Error(
+		"Delete song",
+		slog.String("method", "DELETE"),
+		slog.String("path", "/muslib/"+vars["group"]+"/"+vars["song"]),
+	)
 }

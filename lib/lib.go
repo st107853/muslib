@@ -20,12 +20,10 @@ type Music struct {
 	Song        string `json:"song name"`
 	ReleaseDate string `json:"date of release"`
 	Text        string `json:"text"`
-	Link        string `json:"youtube link"`
+	Link        string `json:"some link"`
 }
 
 type Logger struct {
-	//	events chan<- Event // Write-only channel for sending events
-	//	errors <-chan error // Read-only channels for receving errors
 	*gorm.DB // The database access interface
 }
 
@@ -96,17 +94,19 @@ func Put(group, song, parametr, data string) error {
 		temp.Group = data
 	case "song":
 		temp.Song = data
-	case "date":
+	case "link":
 		{
 			url, err := base64.RawURLEncoding.DecodeString(data)
 
+			link := string(url)
+			temp.Link = link
+
 			if err != nil {
-				fmt.Println(err)
+				return err
 			}
-			temp.ReleaseDate = string(url)
 		}
-	case "link":
-		temp.Link = data
+	case "date":
+		temp.ReleaseDate = data
 	case "text":
 		temp.Text = formatText(data)
 	}
