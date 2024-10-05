@@ -24,7 +24,7 @@
             <td valign="top">
                {{range .Musics}}
                <a href={{.Link}}>Link</a><br>
-               <div>Date of realeas: {{.ReleaseDate}}</div>
+               <div>Date of releas: {{.ReleaseDate}}</div>
                <br>
                <form id="songForm" action="/muslib/{{.Group}}/{{.Song}}/link/" method="post" onsubmit="encodeToBase16()">
                   <label>Link: <input type="text" id="link" required></label>
@@ -36,11 +36,14 @@
                   <br>
                   <input type="submit" value="Change text">
                </form>
-               <form id="songText" action="/muslib/{{.Group}}/{{.Song}}/date/" method="post" onsubmit="formating()">
-                  <label>Date: <input type="text" id="text" required></label>
+               <form id="songDate" action="/muslib/{{.Group}}/{{.Song}}/date/" method="post" onsubmit="date()">
+                  <label>Date: <input type="date" id="my_date" required></label>
                   <br>
                   <input type="submit" value="Change date">
                </form>
+               <form action="/muslib/delete/{{.Group}}/{{.Song}}" method="post">
+                <input type="submit" value="Delete the song">
+             </form>
                {{end}}
             </td>
          </tr>
@@ -61,9 +64,9 @@
       }
       
       function date() {
-          var date = document.getElementById('date').value;
-      
-          document.getElementById('realeasDate').action += date;
+          var text = document.getElementById('my_date').value;
+   
+          document.getElementById('songDate').action += text;
       }
    </script>
 </body>

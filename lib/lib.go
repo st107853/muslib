@@ -82,28 +82,28 @@ func GetBy(par, data string) ([]Music, error) {
 	return songs, nil
 }
 
-func Put(group, song, parametr, data string) error {
+func Put(group, song, parameter, data string) error {
 	temp, err := GetSong(group, song)
 
 	if temp.Group == "" || err != nil {
 		return ErrorNoSuchSong
 	}
 
-	switch parametr {
+	switch parameter {
 	case "group":
 		temp.Group = data
 	case "song":
 		temp.Song = data
 	case "link":
 		{
-			url, err := base64.RawURLEncoding.DecodeString(data)
+			url, _ := base64.RawURLEncoding.DecodeString(data)
 
 			link := string(url)
 			temp.Link = link
 
-			if err != nil {
-				return err
-			}
+			// if err != nil {
+			// 	return err
+			// }
 		}
 	case "date":
 		temp.ReleaseDate = data
