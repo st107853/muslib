@@ -1,0 +1,150 @@
+openapi: 3.0.0
+info:
+  title: Music Library API
+  version: 1.0.0
+  description: API for managing a music library
+servers:
+  - url: http://localhost:{port}
+    variables:
+      port:
+        default: '8080'
+paths:
+  /muslib:
+    get:
+      summary: Get all songs
+      responses:
+        '200':
+          description: A list of songs
+          content:
+            application/json:
+              schema:
+                type: array
+        '500' :
+            description: Internal server error
+  /muslib/{parameter}/{data}:
+    get:
+      summary: Get songs by parameter
+      parameters:
+        - name: parameter
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: data
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: A list of songs
+          content:
+            application/json:
+              schema:
+                type: array
+        '500' :
+            description: Internal server error
+  /muslib/song/{group}/{song}:
+    get:
+      summary: Get a specific song
+      parameters:
+        - name: group
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: song
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Details of the song
+          content:
+            application/json:
+              schema:
+                type: array
+        '500' :
+            description: Internal server error
+        
+  /muslib/{group}/{song}/{parameter}/{data}:
+    post:
+      summary: Update song details
+      parameters:
+        - name: group
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: song
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: parameter
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: data
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Successfully updated
+        '405' :
+            description: Method not allowed
+  /muslib/{group}/{song}:
+    post:
+      summary: Add a new song
+      parameters:
+        - name: group
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: song
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Successfully created
+        '405' :
+            description: Method not allowed
+  /muslib/delete/{group}/{song}:
+    post:
+      summary: Delete a song
+      parameters:
+        - name: group
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: song
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Successfully deleted
+components:
+  schemas:
+    Music:
+      type: object
+      properties:
+        Group:
+          type: string
+        Song:
+          type: string
+        ReleaseDate:
+          type: string
+        Text:
+          type: string
+        Link:
+          type: string
