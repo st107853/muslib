@@ -1,3 +1,4 @@
+# Description
 **Muslib implements an online song library with the following methods:**
 - Creating a new song
 - Reading data from the database
@@ -16,6 +17,6 @@ Then you need to change the settings in .env
 To run the code, use the `go run` command, like:
 
 ```sh
-$ go run example.go
+$ go run .
 ```
 
